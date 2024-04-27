@@ -1,6 +1,6 @@
 {
-  "name": "React Vite Figma Plugin for SSO",
-  "id": "",
+  "name": "Figma Plugin for SSO",
+  "id": "737805260747778095",
   "api": "1.0.0",
   "editorType": ["figma", "figjam"],
   "permissions": [],
