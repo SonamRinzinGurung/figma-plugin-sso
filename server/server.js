@@ -1,5 +1,4 @@
 import express from "express";
-import axios from "axios";
 import { firebase } from "./firebaseConfig.js";
 import dotenv from "dotenv"; //to use environment variables
 dotenv.config();
@@ -45,13 +44,22 @@ app.get("/login", async (req, res) => {
 app.get("/callback", async (req, res) => {
   const code = req.query.code;
   const state = req.query.state;
-  const { data } = await axios.post("https://www.figma.com/api/oauth/token", {
-    client_id: process.env.FIGMA_CLIENT_ID,
-    client_secret: process.env.FIGMA_CLIENT_SECRET,
-    redirect_uri: process.env.FIGMA_REDIRECT_URI,
-    code,
-    grant_type: "authorization_code",
+  const response = await fetch("https://www.figma.com/api/oauth/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      client_id: process.env.FIGMA_CLIENT_ID,
+      client_secret: process.env.FIGMA_CLIENT_SECRET,
+      redirect_uri: process.env.FIGMA_REDIRECT_URI,
+      code,
+      grant_type: "authorization_code",
+    }),
   });
+
+  const data = await response.json();
+
   const accessToken = data.access_token;
 
   //search for the state in the database and add the access token to the document
@@ -110,17 +118,20 @@ app.post("/get-token", async (req, res) => {
   }
 });
 
-app.get("/get-profile", async (req, res) => {
-  const { accessToken } = req.query;
+app.post("/save-profile", async (req, res) => {
+  const { profileData } = req.body;
 
-  const profileResponse = await fetch("https://api.figma.com/v1/me", {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-  const data = await profileResponse.json();
-  res.json(data);
+  if (!profileData.id) {
+    return res.status(400).send("Bad request");
+  }
+
+  const profileRef = firebase.firestore().collection("profile");
+  const userQuery = await profileRef.where("id", "==", profileData.id).get();
+  if (userQuery.empty) {
+    await profileRef.doc().set(profileData, { merge: true });
+    console.log("User data saved successfully.");
+  }
+  res.json(profileData);
 });
 
 const port = process.env.PORT || 3000;
