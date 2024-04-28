@@ -6,11 +6,12 @@ import codeGenerator from "./utils/codeGenerator";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [securityCode, setSecurityCode] = useState("");
+  const [verifyCode, setVerifyCode] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    const { security_code } = codeGenerator(10);
-    setSecurityCode(security_code);
+    const { security_code } = codeGenerator(20);
+    setVerifyCode(security_code);
   }, []);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -39,12 +40,14 @@ function App() {
     const handleAccessToken = (event: MessageEvent) => {
       if (event?.data?.pluginMessage?.type === "access-token") {
         const token = event?.data?.pluginMessage?.accessToken;
-        console.log("Access Token:", token);
+        console.log("Access Tokens:", token);
         setIsAuthenticated(true);
+        setIsLoading(false);
       }
       if (event?.data?.pluginMessage?.type === "no-access-token") {
         console.log("No Access Token");
         setIsAuthenticated(false);
+        setIsLoading(false);
       }
     };
     window.addEventListener("message", handleAccessToken);
@@ -54,17 +57,36 @@ function App() {
   }, []);
 
   const initiateLogin = async () => {
-    const url = `http://localhost:3000/login?verify_code=${securityCode}`;
+    const url = `http://localhost:3000/login?verify_code=${verifyCode}`;
     window.open(url, "_blank");
+
+    parent.postMessage(
+      {
+        pluginMessage: { type: "initiate-login", verify_code: verifyCode },
+      },
+      "*"
+    );
+
+    setIsLoading(true);
+  };
+
+  const handleLogout = () => {
+    parent.postMessage({ pluginMessage: { type: "logout" } }, "*");
+    setIsAuthenticated(false);
   };
 
   return (
     <main>
+      {isAuthenticated && (
+        <div>
+          <button onClick={handleLogout}>Logout</button>
+        </div>
+      )}
       <header>
         <img src={logoPng} />
         &nbsp;
         <img src={`data:image/svg+xml;utf8,${logoSvg}`} />
-        <h2>Hello</h2>
+        <h2>Hey there</h2>
       </header>
       {isAuthenticated ? (
         <div>
@@ -82,7 +104,9 @@ function App() {
       ) : (
         <div>
           <h2>Not Authenticated</h2>
-          <button onClick={() => initiateLogin()}>Login with Figma</button>
+          <button disabled={isLoading} onClick={() => initiateLogin()}>
+            Login with Figma
+          </button>
         </div>
       )}
     </main>
