@@ -29,3 +29,10 @@ VITE_REDIRECT_URI=http://localhost:3000/callback/
 9. Go to `Plugins` > `Development` > `Import plugin from manifest...`
 10. Click on `Click to choose a manifest.json file` and select the `manifest.json` file in the `client` folder of this repository
 11. Click on `Development` > `Figma Plugin for SSO` to run the plugin
+
+***
+![Model](https://github.com/SonamRinzinGurung/figma-plugin-sso/blob/26776542dfc92f728320f4231ad9529b4cc11006/client/src/assets/Figma%20SSO%20Flow.png)
+***
+### Author
+
+[Sonam Rinzin Gurung](https://github.com/SonamRinzinGurung)
