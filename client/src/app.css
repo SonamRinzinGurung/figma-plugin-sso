@@ -69,3 +69,8 @@ header {
 .buttonGroup {
   justify-content: center;
 }
+
+.logoutBtn,
+.profileName {
+  padding: 10px;
+}

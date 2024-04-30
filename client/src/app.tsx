@@ -4,13 +4,8 @@ import codeGenerator from "./utils/codeGenerator";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [verifyCode, setVerifyCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    const { security_code } = codeGenerator(20);
-    setVerifyCode(security_code);
-  }, []);
+  const [profileData, setProfileData] = useState(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -39,6 +34,7 @@ function App() {
       if (event?.data?.pluginMessage?.type === "access-token") {
         setIsAuthenticated(true);
         setIsLoading(false);
+        setProfileData(event?.data?.pluginMessage?.profileData);
       }
       if (event?.data?.pluginMessage?.type === "no-access-token") {
         console.log("No Access Token");
@@ -53,6 +49,8 @@ function App() {
   }, []);
 
   const initiateLogin = async () => {
+    const { security_code: verifyCode } = codeGenerator(20);
+
     const url = `http://localhost:3000/login?verify_code=${verifyCode}`;
     window.open(url, "_blank");
 
@@ -75,9 +73,19 @@ function App() {
     <main>
       <header>
         {isAuthenticated && (
-          <div>
-            <button onClick={handleLogout}>Logout</button>
-          </div>
+          <>
+            <div className="logoutBtn">
+              <button onClick={handleLogout}>Logout</button>
+            </div>
+
+            <div className="profileName">
+              {profileData && (
+                <div>
+                  <p>Hi, {(profileData as { handle: string })?.handle}</p>
+                </div>
+              )}
+            </div>
+          </>
         )}
       </header>
       {isAuthenticated ? (

@@ -1,14 +1,14 @@
 import express from "express";
 import { firebase } from "./firebaseConfig.js";
 import dotenv from "dotenv"; //to use environment variables
-dotenv.config();
 import morgan from "morgan";
 import { fileURLToPath } from "url";
 import path from "path";
 import bodyParser from "body-parser";
-const app = express();
 import "express-async-errors";
 import cors from "cors";
+const app = express();
+dotenv.config();
 
 app.use(morgan("dev"));
 app.use(bodyParser.json());
@@ -18,14 +18,21 @@ app.use(
     credentials: true,
   })
 );
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const file = path.join(__dirname, "./static/successPage.html");
 
+/**
+ * @description Shows the success page after the user has successfully authenticated
+ */
 app.get("/success", (req, res) => {
   res.sendFile(file);
 });
 
+/**
+ * @description Route to redirect the user to Figma OAuth page and stores the verify code in the database
+ */
 app.get("/login", async (req, res) => {
   const { verify_code } = req.query;
 
@@ -41,6 +48,9 @@ app.get("/login", async (req, res) => {
   );
 });
 
+/**
+ * @description Callback route for Figma OAuth - verifies the state and stores the access token in the database
+ */
 app.get("/callback", async (req, res) => {
   const code = req.query.code;
   const state = req.query.state;
@@ -83,9 +93,14 @@ app.get("/callback", async (req, res) => {
   res.redirect(`http://localhost:3000/success`);
 });
 
+/**
+ * @description Route to get the access token from the database using the verify code
+ */
 app.post("/get-token", async (req, res) => {
   const { verify_code } = req.body;
   let accessToken;
+
+  //search for the verify code in the database
   const querySnapshot = await firebase
     .firestore()
     .collection("verify-code")
@@ -98,9 +113,10 @@ app.post("/get-token", async (req, res) => {
       const data = doc.data();
 
       if (data.access_token === undefined) {
+        //if the access token is not present in the database
         unauthorized = true;
       } else {
-        accessToken = data.access_token;
+        accessToken = data.access_token; // get the access token from the database
       }
     });
 
@@ -112,12 +128,17 @@ app.post("/get-token", async (req, res) => {
     querySnapshot.forEach((doc) => {
       firebase.firestore().collection("verify-code").doc(doc.id).delete();
     });
+
     return res.status(200).json({ accessToken });
   } else {
     return res.status(401).send("Unauthorized");
   }
 });
 
+/**
+ * @description Route to save the user's profile data in the database if it doesn't already exist
+
+ */
 app.post("/save-profile", async (req, res) => {
   const { profileData } = req.body;
 
@@ -128,6 +149,7 @@ app.post("/save-profile", async (req, res) => {
   const profileRef = firebase.firestore().collection("profile");
   const userQuery = await profileRef.where("id", "==", profileData.id).get();
   if (userQuery.empty) {
+    //if the user does not exist in the database
     await profileRef.doc().set(profileData, { merge: true });
     console.log("User data saved successfully.");
   }
